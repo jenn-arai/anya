@@ -1,15 +1,18 @@
+import datetime
 import random
 from telegram.ext import *
+from keyboards import *
 import keys, skills, support
 
 
 def start_command(update, context):
     update.message.reply_text(
-        ' هلو اسمي انيا, انيا بوتة الشعبة A قسم نظم المعلومات' + '\n' + 'شعبة A حاليا مرحلة اولى بس انيا راح تبقى بوتتهم حتى من يصعدون لباقي المراحل > _ <')
+        ' هلو اسمي انيا, انيا بوتة الشعبة A قسم نظم المعلومات' + '\n' +
+        'شعبة A حاليا مرحلة اولى بس انيا راح تبقى بوتتهم حتى من يصعدون لباقي المراحل > _ <')
 
 
 def help_command(update, context):
-    update.message.reply_text('انيا بعدهي قيد التطوير , _ ,')
+    update.message.reply_text(text='انيا بعدهي قيد التطوير , _ , بس يلا نجرب..', reply_markup=help_keyboard)
 
 
 def send_pic_command(update, context):
@@ -21,7 +24,34 @@ def dance(update, context):
     update.message.reply_text('انيا تعرف تركص Uwu')
 
 
-def handle_response(text: str):  # important
+def handle_response(text: str, user):  # important
+    # تحويلات الارقام
+    print(user)
+    for list in converting_dict:
+        if user in converting_dict[list]:
+            if list == 'dec2bi':
+                converting_dict[list].remove(user)
+                return support.decimal_to_binary(text)
+            if list == 'dec2oct':
+                converting_dict[list].remove(user)
+                return support.decimal_to_octal(text)
+            if list == 'dec2hex':
+                converting_dict[list].remove(user)
+                return support.decimal_to_hexadecimal(text)
+
+            if list == 'bi2dec':
+                converting_dict[list].remove(user)
+                return support.to_decimal(text, 2)
+            if list == 'oct2dec':
+                converting_dict[list].remove(user)
+                return support.to_decimal(text, 8)
+            if list == 'hex2dec':
+                converting_dict[list].remove(user)
+                return support.to_decimal(text, 16)
+
+
+
+    # الرسائل
     if 'آنيا' in text or keys.bot_name in text:
         if 'هلو' in text:
             return 'هلو uwu'
@@ -124,10 +154,19 @@ def handle_response(text: str):  # important
                 return skills.hard_disk
             if 'فرص مرن' in text or 'فلوبي دسك' in text or 'floppy disk' in text:
                 return skills.floppy_disk
-        if 'عشري الى ثنائي' in text or 'دسمل تو باينري' in text or 'decimal to binary' in text or 'دسمل الى باينري' in text:
+        if 'عشري الى ثنائي' in text or 'دسمل تو باينري' in text or 'دسمل الى باينري' in text:
             return support.decimal_to_binary(text)
-        if 'عشري الى ثماني' in text or 'دسمل تو اوكتال' in text or 'decimal to octal' in text or 'دسمل الى اوكتال' in text:
+        if 'عشري الى ثماني' in text or 'دسمل تو اوكتال' in text or 'دسمل الى اوكتال' in text:
             return support.decimal_to_octal(text)
+        if 'عشري الى سداسي عشر' in text or 'دسمل تو هكس' in text.replace('ز', 'س') or 'دسمل الى هكس' in text.replace('ز','س'):
+            return support.decimal_to_hexadecimal(text)
+
+        if 'سداسي عشر الى عشري' in text or 'هكس تو دسمل' in text.replace('ز', 'س') or 'هكس الى دسمل' in text.replace('ز','س'):
+            return support.to_decimal(text, 16)
+        if 'ثمانس الى عشري' in text or 'اوكتال تو دسمل' in text or 'اوكتال الى دسمل' in text:
+            return support.to_decimal(text, 8)
+        if 'ثنائي الى عشري' in text or 'باينري تو دسمل' in text or 'باينري الى دسمل' in text:
+            return support.to_decimal(text, 2)
 
         if 'شكر' in text:
             return random.choice(['عفوا', '🌹', 'هذا واجب آنيا 😗'])
@@ -139,16 +178,20 @@ def handle_response(text: str):  # important
             # 'آنيا ما اتعرف جواب لهل كلام', 'آنيا ما تعرف هواي اشيائات علموها لآنيا بليز', 'آنيا ما تدري بس آنيا تريد تتعلم',
             return random.choice(['🤷'])
 
-    if '🍊' in text:
+    if '🍊' in text and text != '🍊':
         return random.choice(['هاي برتقالة زينب 🙂', 'يااا برتقال زينب', 'شوفو برتقالة زينب 😍😍'])
+
 
 def handle_message(update, context):
     message_type = update.message.chat.type
+    date = update['message']['date']
+    username = update.message.from_user.username
+    # print(date)
     text = str(update.message.text).lower()
     # print(update.message.from_user)
-    print(f'User ({update.message.from_user.username}) says: "{text}" in: "{message_type}"')
+    print(f'User ({username}) says: "{text}" in: "{message_type} " at: "{date}"')
     new_text = text
-    response = handle_response(text)
+    response = handle_response(text, username)
     if message_type == 'supergroup' or message_type == 'private':
 
         if 'جدول' in new_text and 'آنيا' in new_text:
@@ -234,12 +277,16 @@ def handle_message(update, context):
         if 'آنيا' in new_text:
             if 'ابجي' in new_text or 'ابكي' in new_text or 'خايسة' in new_text:
                 bot.send_animation(update.message.chat.id, 'https://media.giphy.com/media/DNe4LKL6iwZ2goCSx6/giphy.gif')
+        if '🍊' == text:
+            bot.send_message(update.message.chat.id, text='تحبون البرتقال ؟', reply_markup=orange_keyboard)
+
 
 
 
 
     else:
-        response = handle_response(text)
+
+        response = handle_response(text, username)
 
     update.message.reply_text(response)
 
@@ -253,14 +300,20 @@ if __name__ == '__main__':
     updater = Updater(keys.token, use_context=True)
     dp = updater.dispatcher
 
+    # query
+    dp.add_handler(CallbackQueryHandler(query_handler))
+
     # commands
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('help', help_command))
     dp.add_handler(CommandHandler('schedule', send_pic_command))
     dp.add_handler(CommandHandler('dance', dance))
 
+
+
     # messages
     dp.add_handler(MessageHandler(Filters.text, handle_message))
+
 
     # error
     dp.add_error_handler(error)
