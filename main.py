@@ -1,9 +1,10 @@
-import datetime
+import threading
 import random
+import time
+from timey import get_time, get_day, get_customer_schedule
 from telegram.ext import *
 from keyboards import *
 import keys, skills, support
-
 
 def start_command(update, context):
     update.message.reply_text(
@@ -13,6 +14,9 @@ def start_command(update, context):
 
 def help_command(update, context):
     update.message.reply_text(text='انيا بعدهي قيد التطوير , _ , بس يلا نجرب..', reply_markup=help_keyboard)
+
+def exam_command(update, context):
+    update.message.reply_text(text='امتحان سكلز تجريبي..', reply_markup=exam_keyboard)
 
 
 def send_pic_command(update, context):
@@ -280,10 +284,6 @@ def handle_message(update, context):
         if '🍊' == text:
             bot.send_message(update.message.chat.id, text='تحبون البرتقال ؟', reply_markup=orange_keyboard)
 
-
-
-
-
     else:
 
         response = handle_response(text, username)
@@ -296,7 +296,7 @@ def error(update, context):
 
 
 if __name__ == '__main__':
-    bot = ExtBot(keys.token)
+    bot = keys.bot
     updater = Updater(keys.token, use_context=True)
     dp = updater.dispatcher
 
@@ -306,10 +306,9 @@ if __name__ == '__main__':
     # commands
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('help', help_command))
+    dp.add_handler(CommandHandler('exam', exam_command))
     dp.add_handler(CommandHandler('schedule', send_pic_command))
     dp.add_handler(CommandHandler('dance', dance))
-
-
 
     # messages
     dp.add_handler(MessageHandler(Filters.text, handle_message))
@@ -318,6 +317,67 @@ if __name__ == '__main__':
     # error
     dp.add_error_handler(error)
 
+    # ~~~~~~~~~~~~~~~~another thread~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ctime = get_time()
+    # cday = get_day()
+
+    # def update_stuff():
+    #     global ctime, cday
+    #     ctime = get_time()
+    #     cday = get_day()
+    #     # print('time updated')
+    #
+    #     time_updater = threading.Timer(1, update_stuff)    # re-executing the function
+    #     time_updater.daemon = True
+    #     time_updater.start()
+    def send_notification(customers, ctime, cday):
+
+        for indx, customer in enumerate(customers):
+            if indx % 20 == 0 and indx:
+                time.sleep(2)
+            schedule = get_customer_schedule(cday, customer[1])
+            for timey in schedule:  # if current time euals time to time + 1 sec
+                if ctime.split(':')[0] == timey.split(':')[0] and ctime.split(':')[1] == timey.split(':')[1] and int(
+                        ctime.split(':')[2]) < int(timey.split(':')[2]) < int(timey.split(':')[2]) + 2:
+                    bot.send_message(chat_id=customer[0], text=customer[2] + schedule[timey])
+            time.sleep(2)
+
+    def send_stuff():
+        ctime = get_time()
+        cday = get_day()
+
+        tuma = [-1001633594140, 2, 'انيا تحب توما  ']
+        alitest = [-1001817063387, 2, 'تستستست  ']
+        hawraa = [5678624877, 0, 'اوبسي بعد 5 دقايق حوراء لازم تروح ل']
+        jenn = [1449268993, 2, 'محمد طفي الجكارة روح ل']
+        ali = [249797625, 2, 'علي طفي الجكارة روح ل']
+        zainab = [1314191173, 1, 'اوبسي بعد 5 دقايق زينب لازم تروح ل']
+        # the customers are the subscribers to the notifications feature in anya bot
+        # [jenn, tuma, hawraa, ali, zainab, alitest]
+        customers = [jenn, tuma, alitest]
+
+        # sends a notification to all customers
+        send_notification(customers, ctime, cday)
+
+
+        # restarting the timer
+
+        timer = threading.Timer(1, send_stuff)
+        timer.daemon = True
+        timer.start()
+    # the timer runs send_stuff every second
+    timer = threading.Timer(1, send_stuff)
+    timer.daemon = True
+    timer.start()
+
+    # time_updater = threading.Timer(1, update_stuff)
+    # time_updater.daemon = True
+    # time_updater.start()
+
+    # ~~~~~~~~~~~~~~~~another thread~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
     # run bot
     updater.start_polling(1.0)
     updater.idle()
+
